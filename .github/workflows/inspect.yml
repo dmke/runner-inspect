@@ -12,3 +12,39 @@ jobs:
     steps:
       - run: netstat -nba | select-string -Pattern listen -Context 1, 0
         shell: powershell
+
+  dns:
+    name: Run DNS test
+    strategy:
+      matrix:
+        go-version: ["1.18", "1.19", "1.20"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/cache@v3
+        with:
+          # In order:
+          # * Module download cache
+          # * Build cache (Linux)
+          # * Build cache (Mac)
+          # * Build cache (Windows)
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            %LocalAppData%\go-build
+          key: ${{ runner.os }}-${{ matrix.go-version }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.go-version }}-go-
+      - run: |
+          go mod tidy
+          git diff --exit-code go.mod
+          git diff --exit-code go.sum
+          go run main.go
