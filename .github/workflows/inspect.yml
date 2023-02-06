@@ -1,0 +1,14 @@
+name: Inspect
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  ports:
+    name: Inspect open ports
+    runs-on: windows-latest
+
+    steps:
+      - run: netstat -nba | select-string -Pattern listen -Context 1, 0
+        shell: powershell
